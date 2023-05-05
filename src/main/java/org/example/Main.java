@@ -49,9 +49,14 @@ public class Main {
                     var repeatR = repeatR(text);
                     if (sizeToFreq.containsKey(repeatR)) {
                         var countOfR = sizeToFreq.get(repeatR);
-                        sizeToFreq.put(repeatR,countOfR + 1);
+                        sizeToFreq.put(repeatR, countOfR + 1);
                     }
-                    sizeToFreq.putIfAbsent(repeatR,1);
+                    sizeToFreq.putIfAbsent(repeatR, 1);
+                    try {
+                        sizeToFreq.wait();
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }));
         }
@@ -59,8 +64,18 @@ public class Main {
     }
 
 
-    public static void main(String[] args) {
+
+    public static void main(String[] args)  {
         intialisationThreads(ROADS).forEach(thread -> thread.start());
-        sizeToFreq.entrySet().stream().sorted(((o1, o2) -> o2.getValue().compareTo(o1.getValue()))).forEach(System.out::println);
+        new Thread(() -> {
+            while (!Thread.interrupted()) {
+                synchronized (sizeToFreq) {
+                    sizeToFreq.entrySet().stream().sorted(((o1, o2) -> o2.getValue().compareTo(o1.getValue()))).forEach(System.out::println);
+                    sizeToFreq.notify();
+                }
+            }
+        });
+//        sizeToFreq.entrySet().stream().sorted(((o1, o2) -> o2.getValue().compareTo(o1.getValue()))).forEach(System.out::println);
+
     }
 }
